@@ -1,0 +1,151 @@
+<html>
+<head>
+	<title>
+		User's Guide
+	</title>
+</head>
+<body marginwidth = "23%" bgcolor = "grey" marginheight = "5%">
+	<center>
+		<font size = "+8">Minesweeper - User's Guide</font>
+	</center>
+	
+	<br>
+	<br>
+	
+	<!-- Table of Contents -->
+	<font face = "Times New Roman" color = "white">
+		<font size = "+4">Table of Contents</font><br>
+		<font color = "white" face = "Tahoma">
+			<ol type="I">
+				<li > 
+					<a href = "#Rules" style = "color: #D0C6C4">
+						Game Rules & Instructions
+					</a>
+				<li>
+					<a href = "#Features" style = "color: #D0C6C4">
+						Game Features
+					</a>
+				<li>
+					<a href = "#Troubleshooting" style = "color: #D0C6C4">
+						Troubleshooting Errors
+					</a>
+			</ol>
+				
+		<br>
+		<br>
+		
+		<!-- Game Rules & Instructions -->
+		<a name = "Rules"></a>
+		<font size = "+3">Game Rules & Instructions</font><br><br>
+		<i><font size = "+2">Objectives</font><br></i>
+		<ul type = "square">
+			<li>Your objective is to uncover all of the safe squares (squares with no mines in them)
+			<li>Flag all of the mines
+		</ul>
+		
+		<br>
+		
+		<i><font size = "+2">Controls</font><br></i>
+		<ul type = "square">
+			<li>Left click a square to uncover it
+			<li>Right click to flag a square you suspect is a mine
+			<li>Right click an already flagged square to remove the flag
+			<li>Left click the smiley face to restart/start a new game
+		</ul>
+		
+		<br>
+		
+		<i><font size = "+2">Rules & Tips</font><br></i>
+		<ul type = "square">
+			<li>The number displayed on a square shows the number of mines in the blocks surrounding it (including diagonally). If there is no number, then it means that all of the blocks surrounding it are safe
+			<li>There might be times when you have to guess the position of a mine. However, uncover other squares that you know are safe to get more information
+			<li>When you have to guess, always pick the square that has the lowest chance of being a mine
+		</ul>
+
+		<center>
+			<img src = "Images/Flagging Squares.png" height = "40%">	
+		
+			<a onClick = "window.close()">
+				<p><img src = "Images/Return.png" height = "7.5%">
+			</a>
+		</center>
+		
+		<br>
+		<br>
+		
+		<!-- Game Features -->
+		<a name = "Features"></a>
+		<font size = "+3">Game Features</font><br><br>
+		<i><font size = "+2">Auto-Square Clearing</font><br></i>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Upon clicking a safe square (a square with no mines surrounding it), all of it's surrounding squares get exposed automatically. Then, each of the safe squares in the surrounding blocks also get opened up. This function is repeated recursively, resulting in the player spending time actually playing game instead of wasting time exposing safe squares.<br>
+		
+		<br>
+		
+		<i><font size = "+2">Bombs Display</font><br></i>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Upon flagging a square, the number that represents the number of bombs on the board decrements itself by one. Note that the display always assumes that the flag was placed on a mined square (to prevent the player from cheating).<br>
+		
+		<br>
+		
+		<i><font size = "+2">Character Status Display</font><br></i>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The smiley face at the top shows the status of your character. It has a big smile when you are playing the game. Upon death, the smiley face turns into a dead face. When the player wins the game, a "cool guy" face is shown.<br>
+		<br>
+		
+		<i><font size = "+2">Difficulty Settings</font><br></i>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;This game supports multiple difficulty modes. Newer players should choose the "EASY" mode while veterans should choose "MEDIUM" or "HARD". The number of mines on the board changes according to the chosen difficulty. By default, the easy boards have 5 mines while the medium boards have 10 and the hard boards have 15 mines. The game also has two cheats. Can you find them?<br>
+		
+		<br>
+		
+		<i><font size = "+2">Randomized Mine Placement</font><br></i>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The game ensures that each new game is dynamic by randomizing the placement of mines. Therefore, each board is guaranteed to be different!<br>
+		
+		<br>
+		
+		<i><font size = "+2">Right-Click Flagging</font><br></i>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;This game allows players to right click a square to flag it if they believe that the square is mined. After a square has been flagged, it will not be clickable (preventing the users from accidentally clicking the square). Right click a flagged square to deflag it.<br>
+		
+		<center>
+			<a onClick = "window.close()">
+				<p><img src = "Images/Return.png" height = "7.5%">
+			</a>
+		</center>
+		
+		<br>
+		<br>
+		
+		<!-- Troubleshooting Errors -->
+		<a name = "Troubleshooting"></a>
+		<font size = "+3">Troubleshooting Errors</font><br><br>
+		<i><font size = "+2">No Audio</font><br></i>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Normally, a sound plays when the player dies or wins. If you do not hear that sound, try turning your volume up and ensure that your browser has Javascript enabled. If the issue persists, redownload the game.<br>
+		
+		<br>		
+		
+		<i><font size = "+2">Flag Gets Removed When Auto-Opening Squares</font><br></i>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;THIS IS NOT A BUG. This is how the game is intended to work. The flag only gets removed if it's on top of a safe square and has another safe square next it. If the flag was not automatically removed, the player will manually remove it anyways as the safe square will tell the player that the flag was misplaced.<br>
+		
+		<br>
+		
+		<i><font size = "+2">Game is Unplayable (Cannot Click Images)</font><br></i>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;This problem is caused when websites are prevented from running Javascript by the browser. To fix this issue, re-enable Javascript on your browser.<br>
+		
+		<br><a href = "https://www.whatismybrowser.com/guides/how-to-enable-javascript/chrome" target = "_blank">
+			How to enable Javascript on Chrome
+		</a><br>
+		
+		<br><a href = "https://www.whatismybrowser.com/guides/how-to-enable-javascript/firefox" target = "_blank">
+			How to enable Javascript on Firefox
+		</a><br>
+		
+		<br>
+		
+		<i><font size = "+2">Images Not Displaying</font><br></i>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If you see broken image icons when playing the game, it means that some of the game files are missing. Redownload the game.<br>
+		
+		<center>
+			<a onClick = "window.close()">
+				<p><img src = "Images/Return.png" height = "7.5%">
+			</a>
+		</center>
+		</font>
+</body>
+</html>

@@ -1,0 +1,731 @@
+<html>
+<head>
+	<!--
+	Name: Sam Grace Saji
+	Date: January 20, 2017
+	Course Code: ICS3U1
+	Teacher's Name: Mrs. Abram
+	Program Name: Minesweeper Game
+	Description: This program renders a simple minesweeper game. 
+	Notes: I) Compatible with Chrome v55.0.2883.87 m
+		   II) I noticed that the images array (document.images[].src) does not work for comparing the path of an image to another image name as the images array does not cut out the relative path. Instead, I had to use the getAttribute method to work around this
+	-->
+	<title>
+		Minesweeper
+	</title>
+
+	<script>
+		/**This is the on load script. It initializes the game by declaring and initializing all global constants and variables. It also creates the 2D array that contains the exposed game grid information**/
+		//Declaring global constants
+		var BOMBS = 0;	
+		var COL_MAX = 8;
+		var ROW_MAX = 8;
+		var BOMB_DISPLAY_POS = COL_MAX * ROW_MAX + 1;
+		
+		//Setting BOMBS' value based on difficulty level
+		difficultySetting();
+		
+		var SAFE_TILES_MAX = COL_MAX * ROW_MAX - BOMBS;
+		
+		//Declaring and initializing global variables
+		var afterGameEnd = false;
+		var bombsRemaining = BOMBS;
+		var tilesLeft = SAFE_TILES_MAX + bombsRemaining;
+		var autoMode = false;	
+		var index = 0;
+		
+		//Creating the 2D array that contains the exposed game grid
+		var gridInfo = new Array(ROW_MAX);
+		for(i = 0; i < ROW_MAX; i++){
+			gridInfo[i] = new Array(COL_MAX);
+		}
+		
+		//Creating the arrays that will store the row and column of safe squares whose surrounding blocks need to be checked
+		var safeSquareCol = new Array(0);
+		var safeSquareRow = new Array(0);
+	
+		/**Defining functions**/
+		function bombDisplayUpdater(addFlag){
+			//Deciding on increasing/decreasing the bombs display number (dependent on if a flag was placed or removed)
+			switch(addFlag){
+				case true : bombsRemaining--;
+							document.images[BOMB_DISPLAY_POS].src = "Images/" + bombsRemaining + ".jpg";
+							
+							//Checking to see if all the safe squares have been uncovered and all the mines are flagged
+							if(tilesLeft == 0){
+								gameWin();
+							}
+							break;
+				case false : bombsRemaining++;
+							 document.images[BOMB_DISPLAY_POS].src = "Images/" + bombsRemaining + ".jpg";
+							 break;
+				default : document.images[BOMB_DISPLAY_POS].src = "Images/" + bombsRemaining + ".jpg";
+						  break;
+			}
+		}
+		
+		function difficultySetting(){
+			var difficulty = '';
+			var EASY_MINES = 5;
+			var MEDIUM_MINES = 10;
+			var HARD_MINES = 15;
+		
+			//Error-checking the user input
+			do{
+				do{
+					difficulty = prompt("Select a difficulty: \nEASY = " + EASY_MINES + " Mines \nMEDIUM = " + MEDIUM_MINES + " Mines \nHARD = " + HARD_MINES + " Mines\n\nNote: The input is not case-sensitive", "MEDIUM");
+				}while(difficulty == '' || difficulty == null)
+			}while(!(difficulty.toUpperCase() == "EASY" || difficulty.toUpperCase() == "MEDIUM" || difficulty.toUpperCase() == "HARD" || difficulty.toUpperCase() == "TIMOTHY" || difficulty.toUpperCase() == "NOOB"))
+			
+			//Setting the number of mines based on difficulty
+			switch(difficulty.toUpperCase()){
+				case "EASY" : BOMBS = EASY_MINES;
+							  break;
+				case "MEDIUM" : BOMBS = MEDIUM_MINES;
+							  break;
+				case "HARD" : BOMBS = HARD_MINES;
+							  break;
+							  
+				//Cheats
+				case "TIMOTHY" : BOMBS = COL_MAX * ROW_MAX;
+								 break;
+				case "NOOB" : BOMBS = 0;
+								 break;
+				default : break;
+			}
+		}
+		
+		function gameOver(){
+			document.images[0].src = "Images/Dead.jpg";
+			var audio = new Audio("Sounds/Death.mp3");
+			audio.play();
+			alert("Oops! Better luck next time!");
+			afterGameEnd = true;
+		}
+		
+		function gameReload(){
+			//Asking the user to confirm if he/she wishes to restart the game
+			if(afterGameEnd == false){
+				var choice = confirm("Are you sure that you want to restart the game?");
+				
+				//Reloads the webpage if the user wishes to start a new game
+				if(choice == true){
+					window.location.reload();
+				}
+			}
+			else{
+				window.location.reload();
+			}
+		}
+		
+		function gameWin(){
+			document.images[0].src = "Images/Win.jpg";
+			var audio = new Audio("Sounds/Win.mp3");
+			audio.play();
+			alert("Great job!");
+			afterGameEnd = true;
+		}
+		
+		function gridCreator(){
+			//Filling the 2D array with safe squares
+			for(var rows = 0; rows < ROW_MAX; rows++){
+				for(var columns = 0; columns < COL_MAX; columns++){
+					gridInfo[rows][columns] = "Images/Safe.jpg";
+				}
+			}
+			
+			//Using the miner function to mine some of the squares
+			miner();
+		}
+		
+		function mineChecker(row, col){
+			//Prevents the user from clicking after the game has ended
+			if(afterGameEnd == false){
+				//Prevents the user from left clicking anything other than unexposed squares
+				if(document.images[row * COL_MAX + col + 1].getAttribute("src") == "Images/Unexposed.jpg"){
+					if(!(gridInfo[row][col] == "Images/Mine.jpg")){
+						//Setting autoMode to false as this is a manual interaction
+						autoMode = false
+						
+						//Mark the tile as checked so that it won't be added to the safe squares arrays
+						gridInfo[row][col] = "checked";
+						
+						//See if the all the safe squares have been uncovered and all mines have been flagged. If not, then check the check the surrounding squares.
+						if(tilesLeft == 0){
+							gameWin();
+						}
+						else{
+							surroundingsChecker(row, col);
+						}
+					}
+					else{
+						//The player has uncovered a mine
+						document.images[row * COL_MAX + col + 1].src = "Images/Mine.jpg";
+						gameOver();
+					}
+				}
+				else{
+					return;
+				}
+			}
+		}
+		
+		function miner(){
+			var bombsPlanted = 0;
+			var randNumCol = 0;
+			var randNumRow = 0;
+			
+			//Randomly choosing squares to plant bombs
+			while(bombsPlanted < BOMBS){
+				//Picking a random row and column to mine
+				randNumRow = Math.floor(Math.random()*ROW_MAX);
+				randNumCol = Math.floor(Math.random()*COL_MAX);
+				
+				//Checking to make sure that an already mined square is not mined again
+				if(!(gridInfo[randNumRow][randNumCol] == "Images/Mine.jpg")){
+					gridInfo[randNumRow][randNumCol] = "Images/Mine.jpg";
+					bombsPlanted++;
+				}
+			}
+			
+			//Update the bombs display
+			bombDisplayUpdater();
+		}		
+		
+		function surroundingsChecker(row, col){
+			var minesEncountered = 0
+			
+			//Check Up
+			if(row > 0){
+				//Checking to make sure that only unexposed/flagged squares are being checked
+				if(document.images[(row - 1) * COL_MAX + col + 1].getAttribute("src") == "Images/Unexposed.jpg" || document.images[(row - 1) * COL_MAX + col + 1].getAttribute("src") == "Images/Flag.jpg"){
+					//Checking to see if there is mine in the block
+					if(gridInfo[row - 1][col] == "Images/Mine.jpg"){
+						minesEncountered++;
+					}
+				}
+			}
+			
+			//Check Down
+			if(row < (ROW_MAX - 1)){
+				if(document.images[(row + 1) * COL_MAX + col + 1].getAttribute("src") == "Images/Unexposed.jpg" || document.images[(row + 1) * COL_MAX + col + 1].getAttribute("src") == "Images/Flag.jpg"){
+					if(gridInfo[row + 1][col] == "Images/Mine.jpg"){
+						minesEncountered++;
+					}
+				}
+			}
+			
+			//Check Left
+			if(col > 0){
+				if(document.images[row * COL_MAX + (col - 1) + 1].getAttribute("src") == "Images/Unexposed.jpg" || document.images[row * COL_MAX + (col - 1) + 1].getAttribute("src") == "Images/Flag.jpg"){
+					if(gridInfo[row][col - 1] == "Images/Mine.jpg"){
+						minesEncountered++;
+					}
+				}
+			}				
+			
+			//Check Right
+			if(col < (COL_MAX - 1)){
+				if(document.images[row * COL_MAX + (col + 1) + 1].getAttribute("src") == "Images/Unexposed.jpg" || document.images[row * COL_MAX + (col + 1) + 1].getAttribute("src") == "Images/Flag.jpg"){
+					if(gridInfo[row][col + 1] == "Images/Mine.jpg"){
+						minesEncountered++;
+					}
+				}
+			}
+			
+			//Check Up-Left
+			if(row > 0 && col > 0){
+				if(document.images[(row - 1) * COL_MAX + (col - 1) + 1].getAttribute("src") == "Images/Unexposed.jpg" || document.images[(row - 1) * COL_MAX + (col - 1) + 1].getAttribute("src") == "Images/Flag.jpg"){
+					if(gridInfo[row - 1][col - 1] == "Images/Mine.jpg"){
+						minesEncountered++;
+					}
+				}
+			}					
+			
+			//Check Up-Right
+			if(row > 0 && col < (COL_MAX - 1)){
+				if(document.images[(row - 1) * COL_MAX + (col + 1) + 1].getAttribute("src") == "Images/Unexposed.jpg" || document.images[(row - 1) * COL_MAX + (col + 1) + 1].getAttribute("src") == "Images/Flag.jpg"){
+					if(gridInfo[row - 1][col + 1] == "Images/Mine.jpg"){
+						minesEncountered++;
+					}
+				}
+			}
+			
+			//Check Down-Left
+			if(row < (ROW_MAX - 1) && (col > 0)){
+				if(document.images[(row + 1) * COL_MAX + (col - 1) + 1].getAttribute("src") == "Images/Unexposed.jpg" || document.images[(row + 1) * COL_MAX + (col - 1) + 1].getAttribute("src") == "Images/Flag.jpg"){
+					if(gridInfo[row + 1][col - 1] == "Images/Mine.jpg"){
+						minesEncountered++;
+					}
+				}
+			}
+			
+			//Check Down-Right
+			if(row < (ROW_MAX - 1) && (col < (COL_MAX - 1))){
+				if(document.images[(row + 1) * COL_MAX + (col + 1) + 1].getAttribute("src") == "Images/Unexposed.jpg" || document.images[(row + 1) * COL_MAX + (col + 1) + 1].getAttribute("src") == "Images/Flag.jpg"){
+					if(gridInfo[row + 1][col + 1] == "Images/Mine.jpg"){
+						minesEncountered++;
+					}
+				}
+			}
+			
+			//Chanindexng the block whose surrounding blocks have been checked to show the no. of bombs surrounding it
+			switch(minesEncountered){
+				case 0 : document.images[row * COL_MAX + col + 1].src = "Images/Safe.jpg";
+				
+						//Adding the coordinates of the surrounding blocks to the array to be checked
+						//Check Up
+						if(row > 0){
+							//Checking to see if the square has already been added to the safe squares arrays
+							if(gridInfo[row - 1][col] != "checked"){
+								//Adding the square to the array
+								safeSquareRow.push(row - 1);
+								safeSquareCol.push(col);
+								
+								//Marking the square as it has been added to safe squares arrays
+								gridInfo[row - 1][col] = "checked";								
+							}
+						}
+						
+						//Check Down
+						if(row < (ROW_MAX - 1)){
+							if(gridInfo[row + 1][col] != "checked"){
+								safeSquareRow.push(row + 1);
+								safeSquareCol.push(col);
+								gridInfo[row + 1][col] = "checked";								
+							}
+						}
+						
+						//Check Left
+						if(col > 0){
+							if(gridInfo[row][col - 1] != "checked"){
+								safeSquareRow.push(row);
+								safeSquareCol.push(col - 1);
+								gridInfo[row][col - 1] = "checked";								
+							}
+						}				
+						
+						//Check Right
+						if(col < (COL_MAX - 1)){
+							if(gridInfo[row][col + 1] != "checked"){
+								safeSquareRow.push(row);
+								safeSquareCol.push(col + 1);
+								gridInfo[row][col + 1] = "checked";								
+							}
+						}
+						
+						//Check Up-Left
+						if(row > 0 && col > 0){
+							if(gridInfo[row - 1][col - 1] != "checked"){
+								safeSquareRow.push(row - 1);
+								safeSquareCol.push(col - 1);
+								gridInfo[row - 1][col - 1] = "checked";								
+							}
+						}					
+						
+						//Check Up-Right
+						if(row > 0 && col < (COL_MAX - 1)){
+							if(gridInfo[row - 1][col + 1] != "checked"){
+								safeSquareRow.push(row - 1);
+								safeSquareCol.push(col + 1);
+								gridInfo[row - 1][col + 1] = "checked";							
+							}
+						}
+						
+						//Check Down-Left
+						if(row < (ROW_MAX - 1) && (col > 0)){
+							if(gridInfo[row + 1][col - 1] != "checked"){
+								safeSquareRow.push(row + 1);
+								safeSquareCol.push(col - 1);
+								gridInfo[row + 1][col - 1] = "checked";								
+							}
+						}
+						
+						//Check Down-Right
+						if(row < (ROW_MAX - 1) && (col < (COL_MAX - 1))){
+							if(gridInfo[row + 1][col + 1] != "checked"){
+								safeSquareRow.push(row + 1);
+								safeSquareCol.push(col + 1);
+								gridInfo[row + 1][col + 1] = "checked";								
+							}
+						}
+						
+						if(autoMode == false){
+							autoMode = true;
+							
+							//Decreasing the number of tiles left to interact the control does not come from a manual interaction
+							tilesLeft--;
+							surroundingsCheckerLoop();
+						}
+						else{
+							return;
+						}
+						 break;
+				case 1 : document.images[row * COL_MAX + col + 1].src = "Images/Unsafe_1.jpg";
+						 break;
+				case 2 : document.images[row * COL_MAX + col + 1].src = "Images/Unsafe_2.jpg";
+						 break;
+				case 3 : document.images[row * COL_MAX + col + 1].src = "Images/Unsafe_3.jpg";
+						 break;
+				case 4 : document.images[row * COL_MAX + col + 1].src = "Images/Unsafe_4.jpg";
+						 break;
+				case 5 : document.images[row * COL_MAX + col + 1].src = "Images/Unsafe_5.jpg";
+						 break;
+				case 6 : document.images[row * COL_MAX + col + 1].src = "Images/Unsafe_6.jpg";
+						 break;
+				case 7 : document.images[row * COL_MAX + col + 1].src = "Images/Unsafe_7.jpg";
+						 break;
+				case 8 : document.images[row * COL_MAX + col + 1].src = "Images/Unsafe_8.jpg";
+						 break;
+				default : break;
+			}
+			
+			//This block of code here accounts for squares that are uncovered that are not safe (Otherwise, tilesLeft would never reach 0)
+			if(autoMode == false){
+				tilesLeft--;
+				
+				//Ending game if all squares have been interacted with
+				if(tilesLeft == 0){
+					gameWin();
+				}
+			}
+		}
+		
+		function surroundingsCheckerLoop(){			
+			//Checking all the safe squares in the arrays
+			while(index < safeSquareRow.length){				
+				col = safeSquareCol[index];
+				row = safeSquareRow[index];
+				index++;
+				tilesLeft--;
+				
+				//Checking the new safe square
+				surroundingsChecker(row, col);	
+			}
+			
+			//Ending game if all squares have been interacted with
+			if(tilesLeft == 0){
+				gameWin();
+			}
+		}
+		
+		function tileFlag(row, col){
+			if(afterGameEnd == false){
+				//De-flagging a square if it already flagged
+				if(document.images[row * COL_MAX + col + 1].getAttribute("src") == "Images/Flag.jpg"){
+					document.images[row * COL_MAX + col + 1].src = "Images/Unexposed.jpg";
+					tilesLeft++;
+					
+					//Updating the bomb number display
+					bombDisplayUpdater(false);
+				}
+				
+				//Flagging a square if it is unexposed
+				else if(document.images[row * COL_MAX + col + 1].getAttribute("src") == "Images/Unexposed.jpg"){				
+					//Checking ensure that the player does not put more flags than there are bombs
+					if(!(bombsRemaining == 0)){
+						document.images[row * COL_MAX + col + 1].src = "Images/Flag.jpg";
+						tilesLeft--;
+						
+						//Updating the bomb number display
+						bombDisplayUpdater(true);
+					}
+					else{
+						alert("There are only " + BOMBS + " bombs in this board!");
+					}
+				}
+				else{
+					alert("Flags can only be placed on unexposed squares!");
+				}
+			}
+		}
+	</script>
+</head>
+<body>
+	<!-- Rendering the game board -->
+	<center>
+		<!-- Rendering the character status image -->
+		<a href="#" onClick = "gameReload();" oncontextmenu = "return false">
+			<img src = "Images/Normal.jpg" height = "14%"><p>
+		</a>
+		
+		<!-- Rendering the unexposed squares (Row 1) -->
+		<a onClick = "mineChecker(0, 0);" oncontextmenu = "tileFlag(0, 0); return false"> <!-- Prevents the right click context menu from popping up -->
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(0, 1);" oncontextmenu = "tileFlag(0, 1); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(0, 2);" oncontextmenu = "tileFlag(0, 2); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(0, 3);" oncontextmenu = "tileFlag(0, 3); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+				
+		<a onClick = "mineChecker(0, 4);" oncontextmenu = "tileFlag(0, 4); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(0, 5);" oncontextmenu = "tileFlag(0, 5); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(0, 6);" oncontextmenu = "tileFlag(0, 6); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(0, 7);" oncontextmenu = "tileFlag(0, 7); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%"><br>
+		</a>
+		
+		<!-- Rendering the unexposed squares (Row 2); -->
+		<a onClick = "mineChecker(1, 0);" oncontextmenu = "tileFlag(1, 0); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(1, 1);" oncontextmenu = "tileFlag(1, 1); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(1, 2);" oncontextmenu = "tileFlag(1, 2); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(1, 3);" oncontextmenu = "tileFlag(1, 3); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+				
+		<a onClick = "mineChecker(1, 4);" oncontextmenu = "tileFlag(1, 4); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(1, 5);" oncontextmenu = "tileFlag(1, 5); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(1, 6);" oncontextmenu = "tileFlag(1, 6); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(1, 7);" oncontextmenu = "tileFlag(1, 7); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%"><br>
+		</a>
+		
+		<!-- Rendering the unexposed squares (Row 3); -->
+		<a onClick = "mineChecker(2, 0);" oncontextmenu = "tileFlag(2, 0); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(2, 1);" oncontextmenu = "tileFlag(2, 1); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(2, 2);" oncontextmenu = "tileFlag(2, 2); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(2, 3);" oncontextmenu = "tileFlag(2, 3); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+				
+		<a onClick = "mineChecker(2, 4);" oncontextmenu = "tileFlag(2, 4); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(2, 5);" oncontextmenu = "tileFlag(2, 5); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(2, 6);" oncontextmenu = "tileFlag(2, 6); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(2, 7);" oncontextmenu = "tileFlag(2, 7); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%"><br>
+		</a>
+		
+		<!-- Rendering the unexposed squares (Row 4); -->
+		<a onClick = "mineChecker(3, 0);" oncontextmenu = "tileFlag(3, 0); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(3, 1);" oncontextmenu = "tileFlag(3, 1); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(3, 2);" oncontextmenu = "tileFlag(3, 2); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(3, 3);" oncontextmenu = "tileFlag(3, 3); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+				
+		<a onClick = "mineChecker(3, 4);" oncontextmenu = "tileFlag(3, 4); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(3, 5);" oncontextmenu = "tileFlag(3, 5); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(3, 6);" oncontextmenu = "tileFlag(3, 6); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(3, 7);" oncontextmenu = "tileFlag(3, 7); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%"><br>
+		</a>
+		
+		<!-- Rendering the unexposed squares (Row 5); -->
+		<a onClick = "mineChecker(4, 0);" oncontextmenu = "tileFlag(4, 0); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(4, 1);" oncontextmenu = "tileFlag(4, 1); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(4, 2);" oncontextmenu = "tileFlag(4, 2); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(4, 3);" oncontextmenu = "tileFlag(4, 3); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+				
+		<a onClick = "mineChecker(4, 4);" oncontextmenu = "tileFlag(4, 4); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(4, 5);" oncontextmenu = "tileFlag(4, 5); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(4, 6);" oncontextmenu = "tileFlag(4, 6); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(4, 7);" oncontextmenu = "tileFlag(4, 7); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%"><br>
+		</a>
+		
+		<!-- Rendering the unexposed squares (Row 6); -->
+		<a onClick = "mineChecker(5, 0);" oncontextmenu = "tileFlag(5, 0); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(5, 1);" oncontextmenu = "tileFlag(5, 1); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(5, 2);" oncontextmenu = "tileFlag(5, 2); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(5, 3);" oncontextmenu = "tileFlag(5, 3); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+				
+		<a onClick = "mineChecker(5, 4);" oncontextmenu = "tileFlag(5, 4); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(5, 5);" oncontextmenu = "tileFlag(5, 5); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(5, 6);" oncontextmenu = "tileFlag(5, 6); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(5, 7);" oncontextmenu = "tileFlag(5, 7); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%"><br>
+		</a>
+		
+		<!-- Rendering the unexposed squares (Row 7); -->
+		<a onClick = "mineChecker(6, 0);" oncontextmenu = "tileFlag(6, 0); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(6, 1);" oncontextmenu = "tileFlag(6, 1); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(6, 2);" oncontextmenu = "tileFlag(6, 2); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(6, 3);" oncontextmenu = "tileFlag(6, 3); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+				
+		<a onClick = "mineChecker(6, 4);" oncontextmenu = "tileFlag(6, 4); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(6, 5);" oncontextmenu = "tileFlag(6, 5); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(6, 6);" oncontextmenu = "tileFlag(6, 6); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(6, 7);" oncontextmenu = "tileFlag(6, 7); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%"><br>
+		</a>
+		
+		<!-- Rendering the unexposed squares (Row 8); -->
+		<a onClick = "mineChecker(7, 0);" oncontextmenu = "tileFlag(7, 0); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(7, 1);" oncontextmenu = "tileFlag(7, 1); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(7, 2);" oncontextmenu = "tileFlag(7, 2); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(7, 3);" oncontextmenu = "tileFlag(7, 3); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+				
+		<a onClick = "mineChecker(7, 4);" oncontextmenu = "tileFlag(7, 4); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(7, 5);" oncontextmenu = "tileFlag(7, 5); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(7, 6);" oncontextmenu = "tileFlag(7, 6); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%">
+		</a>
+		
+		<a onClick = "mineChecker(7, 7);" oncontextmenu = "tileFlag(7, 7); return false">
+			<img src = "Images/Unexposed.jpg" height = "7%"><p>
+		</a>
+		
+		<!-- Creating the bomb number display -->
+		<img src = "Images/10.jpg" height = "7.5%" align = "center">
+		<font face = "arial" size = "+2" color = "red">Bombs Left</font><p>
+		
+		<!-- Creating link to the instructions page -->
+		<a href = "Instructions.html" target="_blank">
+			<img src = "Images/Help.png" height = "7.5%">
+		</a>
+	</center>
+	
+	<!-- Starting to create the exposed game grid -->
+	<script>
+		gridCreator();
+	</script>
+</body>
+</html>
